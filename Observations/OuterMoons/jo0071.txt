@@ -1,0 +1,27 @@
+ABS 		data_type       	#ABS (absolute), REL (tangential), DIF (differential coorinates) or CPV (camera pointing vector)
+0		moon_entry         	#Target body
+1		time_entry             	#First time entry (python, so starting at 0)
+3		amount_time_entries  	#Amount of time entries
+DATE		time_type          	#JD, MJD, J2000, DATE, MINsinceJDaddingtheJD 
+utc		time_scale		#time scale,lower case, gmt=ut1
+0		time_delta         	#hours away from standard time scale (i.e. utc-3 is -3)
+4		RA_entry           	#First RA or X entry
+7		DEC_entry             	#First DEC or Y entry
+1		number_observatories  	#Amount of observatories, needs extra definition which one if 1
+C51		observatory       	#Ignored if more than 1 observatory
+10		observatory_entrace	#Ignored if 1 observatory
+0		relative_body_entry  	#Ignored if ABS, can either be a name or entry position
+0		process_relative       	#Switch for processing relative observations or not
+J2000   	Epoch of equinox        #J2000, B1950
+Jupiter       central_body            #name or number
+06 2020 04 16.90193  19 51 33.86  -21 30 34.4   19    R  +5160.2763  -3988.8264  -2120.4527  142129
+06 2020 04 16.96725  19 51 35.56  -21 30 30.9    -    -  +5180.9282  -3986.8860  -2073.0990  142129
+06 2020 04 17.09803  19 51 38.96  -21 30 24.3    -    -  +5195.1778  -3976.4087  -2057.4490  142129
+06 2020 04 17.16348  19 51 40.63  -21 30 21.3    -    -  +5188.8999  -3968.0494  -2089.2732  142129
+06 2020 04 17.55581  19 51 50.69  -21 30 01.1    -    -  +5231.4401  -3936.3754  -2042.4310  142129
+06 2021 10 24.43927  21 42 26.92  -15 06 23.6   19    R  +5955.5570  -3042.6294  -1500.8521  142133
+06 2021 10 24.56992  21 42 27.70  -15 06 12.6    -    -  +5958.7885  -3023.7211  -1526.0714  142133
+06 2021 10 24.70056  21 42 28.49  -15 06 01.2    -    -  +5961.8842  -3004.7789  -1551.2269  142133
+06 2021 10 24.83134  21 42 29.29  -15 05 49.9    -    -  +5976.5761  -3003.7824  -1495.1652  142133
+06 2021 10 25.15809  21 42 31.30  -15 05 21.8    -    -  +5995.8643  -2974.3827  -1476.1901  142133
+06 2021 10 25.28874  21 42 32.12  -15 05 10.3    -    -  +5998.9803  -2955.5055  -1501.2597  142133

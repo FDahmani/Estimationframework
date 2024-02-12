@@ -1,0 +1,36 @@
+ABS 		data_type       	#ABS (absolute), REL (tangential), DIF (differential coorinates) or CPV (camera pointing vector)
+0		moon_entry         	#Target body
+1		time_entry             	#First time entry (python, so starting at 0)
+3		amount_time_entries  	#Amount of time entries
+DATE		time_type          	#JD, MJD, J2000, DATE, MINsinceJDaddingtheJD 
+utc		time_scale		#time scale,lower case
+0		time_delta         	#hours away from standard time scale (i.e. utc-3 is -3)
+4		RA_entry           	#First RA or X entry
+7		DEC_entry             	#First DEC or Y entry
+1		number_observatories  	#Amount of observatories, needs extra definition which one if 1
+415		observatory       	#Ignored if more than 1 observatory
+10		observatory_entrace	#Ignored if 1 observatory
+0		relative_body_entry  	#Ignored if ABS, can either be a name or entry position
+0		process_relative       	#Switch for processing relative observations or not
+J2000   	Epoch of equinox        #J2000, B1950
+Jupiter       central_body            #name or number
+06  2007 03 10.67088  17 10 48.42  -22 27 11.3   415  59305     16.3 V
+06  2007 03 10.67188  17 10 48.45  -22 27 11.3   415  59305     16.7 V
+06  2007 03 13.60806  17 11 56.67  -22 29 54.9   415  59305     16.7 V
+06  2007 03 13.60883  17 11 56.68  -22 29 54.9   415  59305     16.8 V
+06  2007 03 23.66615  17 15 03.25  -22 37 55.3   415  59305     16.4 V
+06  2007 03 23.66692  17 15 03.27  -22 37 55.3   415  59305     16.4 V
+07  2007 03 13.61625  17 12 53.57  -22 16 34.0   415  59305     18.8 V
+07  2007 03 13.62057  17 12 53.66  -22 16 34.2   415  59305     18.3 V
+07  2007 03 23.68307  17 16 09.14  -22 27 29.1   415  59305     16.9 V
+07  2007 03 23.68735  17 16 09.19  -22 27 29.5   415  59305     17.7 V
+08  2007 03 10.71312  17 19 16.01  -22 54 38.3   415  59305     19.5 V
+08  2007 03 13.63182  17 20 22.61  -22 54 55.6   415  59305     18.3 V
+08  2007 03 13.63610  17 20 22.71  -22 54 55.3   415  59305     18.6 V
+08  2007 03 23.70708  17 23 22.24  -22 54 42.7   415  59305     17.8 V
+08  2007 03 23.71344  17 23 22.33  -22 54 42.5   415  59305     17.7 V
+09  2007 03 13.67475  17 17 28.43  -22 36 40.1   415  59305     19.6 V
+09  2007 03 13.68040  17 17 28.53  -22 36 40.5   415  59305     19.4 V
+11  2007 03 13.64659  17 19 15.91  -22 18 04.2   415  59305     18.7 V
+11  2007 03 13.65295  17 19 16.03  -22 18 04.4   415  59305     18.5 V
+12  2007 03 13.71479  17 16 23.48  -21 52 19.7   415  59305     19.1 V

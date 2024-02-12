@@ -1,0 +1,52 @@
+ABS 		data_type       	#ABS (absolute), REL (tangential), DIF (differential coorinates) or CPV (camera pointing vector)
+0		moon_entry         	#Target body
+1		time_entry             	#First time entry (python, so starting at 0)
+3		amount_time_entries  	#Amount of time entries
+DATE		time_type          	#JD, MJD, J2000, DATE, MINsinceJDaddingtheJD 
+utc		time_scale		#time scale,lower case
+0		time_delta         	#hours away from standard time scale (i.e. utc-3 is -3)
+4		RA_entry           	#First RA or X entry
+7		DEC_entry             	#First DEC or Y entry
+3		number_observatories  	#Amount of observatories, needs extra definition which one if 1
+689		observatory       	#Ignored if more than 1 observatory
+10		observatory_entrace	#Ignored if 1 observatory
+0		relative_body_entry  	#Ignored if ABS, can either be a name or entry position
+0		process_relative       	#Switch for processing relative observations or not
+J2000   	Epoch of equinox        #J2000, B1950
+Jupiter       central_body            #name or number
+ 7  2003 11 15.45338 11 03 55.91  +06 39 21.1   703
+ 7  2003 11 15.46246 11 03 56.17  +06 39 20.1   703
+ 7  2003 11 15.47154 11 03 56.45  +06 39 19.9   703
+ 7  2003 11 15.48061 11 03 56.64  +06 39 17.3   703
+ 8  2003 02 18.53008 08 46 16.75  +17 57 48.9   608
+ 8  2003 02 18.54057 08 46 16.46  +17 57 50.3   608
+ 8  2003 02 18.55092 08 46 16.15  +17 57 51.8   608
+ 8  2003 11 15.48488 11 14 00.24  +06 53 50.8   703
+ 8  2003 11 15.49509 11 14 00.57  +06 53 48.1   703
+ 8  2003 11 15.50528 11 14 00.95  +06 53 46.0   703
+ 8  2003 11 15.51545 11 14 01.27  +06 53 44.0   703
+ 8  2003 11 20.48417 11 16 40.03  +06 39 59.3   691
+ 8  2003 11 20.49705 11 16 40.40  +06 39 57.3   691
+ 8  2003 11 20.51001 11 16 40.80  +06 39 55.3   691
+ 8  2003 11 23.46622 11 18 09.23  +06 32 22.6   704
+ 8  2003 11 23.47863 11 18 09.62  +06 32 21.1   704
+ 8  2003 11 23.49118 11 18 09.94  +06 32 18.5   704
+ 8  2003 11 23.50371 11 18 10.32  +06 32 16.5   704
+ 9  2003 11 20.48417 11 11 49.32  +06 46 12.1   691
+ 9  2003 11 20.49705 11 11 49.64  +06 46 10.4   691
+ 9  2003 11 20.51001 11 11 49.96  +06 46 08.3   691
+11  2003 11 15.49170 11 13 49.36  +05 35 57.0   703
+11  2003 11 15.50188 11 13 49.73  +05 35 55.1   703
+11  2003 11 15.51207 11 13 49.97  +05 35 53.4   703
+11  2003 11 15.52228 11 13 50.29  +05 35 51.6   703
+11  2003 12 05.47915 11 22 24.90  +04 43 32.0   703
+11  2003 12 05.48955 11 22 25.00  +04 43 28.9   703
+11  2003 12 05.50007 11 22 25.30  +04 43 28.0   703
+11  2003 12 05.51034 11 22 25.41  +04 43 28.0   703
+12  2003 11 20.48417 11 12 21.27  +06 47 50.4   691
+12  2003 11 20.49705 11 12 21.67  +06 47 48.1   691
+12  2003 11 20.51001 11 12 22.09  +06 47 45.6   691
+ 8  2003 12 14.43197 11 26 10.73  +05 54 25.4   703
+ 8  2003 12 14.44470 11 26 10.93  +05 54 23.9   703
+ 8  2003 12 14.45734 11 26 11.16  +05 54 23.5   703
+ 8  2003 12 14.47002 11 26 11.34  +05 54 22.6   703

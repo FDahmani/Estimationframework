@@ -1,0 +1,18 @@
+ABS 		data_type       	#ABS (absolute), REL (tangential), DIF (differential coorinates) or CPV (camera pointing vector)
+12		moon_entry         	#Target body
+0		time_entry             	#First time entry (python, so starting at 0)
+6		amount_time_entries  	#Amount of time entries
+DATE		time_type          	#JD, MJD, J2000, DATE, MINsinceJDaddingtheJD 
+utc		time_scale		#time scale,lower case
+0		time_delta         	#hours away from standard time scale (i.e. utc-3 is -3)
+6		RA_entry           	#First RA or X entry
+9		DEC_entry             	#First DEC or Y entry
+1		number_observatories  	#Amount of observatories, needs extra definition which one if 1
+673		observatory       	#Ignored if more than 1 observatory
+10		observatory_entrace	#Ignored if 1 observatory
+0		relative_body_entry  	#Ignored if ABS, can either be a name or entry position
+0		process_relative       	#Switch for processing relative observations or not
+J2000   	Epoch of equinox        #J2000, B1950
+Jupiter       central_body            #name or number
+2010  7  9  11 19 19.2   0 10  7.5350    0  11  54.870  8  Tycho-2
+2010  7  9  11 24 29.3   0 10  7.5820    0  11  54.820  8  Tycho-2

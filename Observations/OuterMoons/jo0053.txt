@@ -1,0 +1,33 @@
+ABS 		data_type       	#ABS (absolute), REL (tangential), DIF (differential coorinates) or CPV (camera pointing vector)
+12		moon_entry         	#Target body
+0		time_entry             	#First time entry (python, so starting at 0)
+6		amount_time_entries  	#Amount of time entries
+DATE		time_type          	#JD, MJD, J2000, DATE, MINsinceJDaddingtheJD 
+utc		time_scale		#time scale,lower case
+0		time_delta         	#hours away from standard time scale (i.e. utc-3 is -3)
+6		RA_entry           	#First RA or X entry
+9		DEC_entry             	#First DEC or Y entry
+1		number_observatories  	#Amount of observatories, needs extra definition which one if 1
+689		observatory       	#Ignored if more than 1 observatory
+10		observatory_entrace	#Ignored if 1 observatory
+0		relative_body_entry  	#Ignored if ABS, can either be a name or entry position
+0		process_relative       	#Switch for processing relative observations or not
+J2000   	Epoch of equinox        #J2000, B1950
+Jupiter       central_body            #name or number
+2012  9 18  12 33 38.0   4 57 15.7431   21  25  25.299  6  0.445 Tyc-2
+2012  9 19  12 30 53.0   4 57 24.5680   21  25  10.519  6  0.447 Tyc-2
+2012  9 20  12 26  3.0   4 57 32.5855   21  24  54.895  6  0.448 Tyc-2
+2012  9 25  12  6 51.0   4 58  0.5201   21  23  30.276  6  0.456 Tyc-2
+2012  9 26  12  3 43.0   4 58  3.6773   21  23  12.250  6  0.457 Tyc-2
+2012  9 27  11 59 49.0   4 58  6.0258   21  22  53.420  6  0.459 Tyc-2
+2012  9 28  11 55 55.0   4 58  7.5977   21  22  34.625  6  0.460 Tyc-2
+2012  9 29  11 52  0.0   4 58  8.3153   21  22  14.978  6  0.462 Tyc-2
+2012 10  1  11 43 41.0   4 58  7.3367   21  21  35.560  6  0.465 Tyc-2
+2012 10  2  11 40 27.0   4 58  5.6953   21  21  14.976  6  0.466 Tyc-2
+2012 10  3  11 35 27.0   4 58  3.2048   21  20  54.794  6  0.468 Tyc-2
+2012 10  7  11 20 10.0   4 57 45.2287   21  19  31.418  6  0.473 Tyc-2
+2012 10  8  11 16  7.0   4 57 38.7515   21  19  10.138  6  0.475 Tyc-2
+2012 10  9  11 11 20.0   4 57 31.4751   21  18  48.985  6  0.476 Tyc-2
+2012 10 10  11  7 16.0   4 57 23.4295   21  18  27.782  6  0.478 Tyc-2
+2012 10 16  10 43 30.0   4 56 18.9169   21  16  21.557  6  0.486 Tyc-2
+2012 10 17  10 39 29.0   4 56  5.5436   21  16   1.207  6  0.487 Tyc-2
