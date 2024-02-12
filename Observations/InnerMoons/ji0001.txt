@@ -1,0 +1,51 @@
+REL 		data_type       	#ABS (absolute), REL (tangential), DIF (differential coorinates) or CPV (camera pointing vector)
+4		moon_entry         	#Target body
+0		time_entry             	#First time entry
+4		amount_time_entries  	#Amount of time entries
+DATE		time_type          	#JD, MJD, J2000, DATE, MINsinceJDaddingtheJD 
+utc		time_scale		#time scale,lower case
+0		time_delta         	#hours away from standard time scale (i.e. utc-3 is -3)
+6		RA_entry           	#First RA or X entry
+7		DEC_entry             	#First DEC or Y entry
+1		number_observatories  	#Amount of observatories, needs extra definition which one if 1
+B18		observatory       	#Ignored if more than 1 observatory
+0		observatory_entrace	#Ignored if 1 observatory
+5		relative_body_entry  	#Ignored if ABS, can either be a name or entry position
+True		process_relative       	#Switch for processing relative observations or not
+J2000   Epoch of equinox        #J2000, B1950
+Jupiter       central_body            #name or number
+1998 09 19 20.04222  14   2    82.401   45.295
+1998 09 19 20.37222  14   2    84.445   46.750
+1998 09 19 20.64000  14   2    86.857   48.176
+1998 09 19 20.73694  14   2    87.695   48.683
+1998 09 19 21.00638  14   2    91.182   50.171
+1998 09 19 21.18972  14   2    93.863   51.525
+1998 09 20 20.31264  14   2   173.673   72.154
+1998 09 20 20.40617  14   2   172.931   71.827
+1998 09 20 20.49664  14   2   172.219   71.301
+1998 09 20 21.15772  14   2   164.747   66.660
+1998 09 20 21.25764  14   2   163.242   65.769
+1998 09 20 21.36866  14   2   161.382   64.630
+1998 09 20 21.45247  14   2   159.676   63.704
+1998 09 21 19.51861  14   1  -187.422  -89.419
+1998 09 21 19.56278  14   1  -187.960  -89.874
+1998 09 21 19.60917  14   1  -188.850  -90.056
+1998 09 21 19.66639  14   1  -189.424  -90.028
+1998 09 21 19.89583  14   1  -192.346  -90.949
+1998 09 21 20.06194  14   1  -193.960  -91.325
+1998 09 21 20.22361  14   1  -194.892  -91.375
+1998 09 21 20.40694  14   1  -195.988  -91.380
+1998 09 21 20.99583  14   1  -196.332  -90.253
+1998 09 21 21.17639  14   1  -195.474  -89.291
+1998 09 21 21.55611  14   1  -192.330  -87.098
+1998 09 21 21.69083  14   1  -190.636  -86.014
+1998 09 21 21.77555  14   1  -189.506  -85.290
+1998 09 21 21.86139  14   1  -188.479  -84.296
+1998 09 21 22.34917  14   1  -179.565  -79.603
+1998 09 26 18.89806   5   2   160.867   83.162
+1998 09 26 18.98583   5   2   160.902   82.962
+1998 09 26 19.09111   5   2   160.605   82.719
+1998 09 26 19.17917   5   2   160.406   82.495
+1998 09 26 19.26944   5   2   159.930   82.068
+1998 09 26 19.41222   5   2   159.178   81.432
+1998 09 26 19.60667   5   2   157.843   80.627

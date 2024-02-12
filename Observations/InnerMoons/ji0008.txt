@@ -1,0 +1,22 @@
+ABS 		data_type       	#ABS (absolute), REL (tangential), DIF (differential coorinates) or CPV (camera pointing vector)
+3		moon_entry         	#Target body
+0		time_entry             	#First time entry
+1		amount_time_entries  	#Amount of time entries
+JD		time_type          	#JD, MJD, J2000, DATE, MINsinceJDaddingtheJD 
+utc		time_scale		#time scale,lower case
+0		time_delta         	#hours away from standard time scale (i.e. utc-3 is -3)
+1		RA_entry           	#First RA or X entry
+2		DEC_entry             	#First DEC or Y entry
+1		number_observatories  	#Amount of observatories, needs extra definition which one if 1
+711		observatory       	#Ignored if more than 1 observatory
+0		observatory_entrace	#Ignored if 1 observatory
+0		relative_body_entry  	#Ignored if ABS, can either be a name or entry position
+0		process_relative       	#Switch for processing relative observations or not
+B1950   Epoch of equinox        #J2000, B1950
+Jupiter       central_body            #name or number
+2443050.96840    58.74650      19.19013     5
+2443459.77830    95.62194      23.00701     5
+2443461.76632    95.48135      23.01477     5
+2443486.66250    92.75600      23.12960     5
+2443515.79306    88.52841      23.21698     5
+2443517.79323    88.26256      23.21956     5
