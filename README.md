@@ -1,4 +1,4 @@
-# Estimationframework
+# Estimation Framework
 
 In this repository, the code and input files of my thesis, titled 'Obrit Estimation of Minor Jovian Satellites', can be found. The code forms a framework for the initial state estimation for small moons. The following files are found in the repository:
 
