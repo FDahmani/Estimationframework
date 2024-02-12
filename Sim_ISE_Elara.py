@@ -1,0 +1,492 @@
+# Load required standard modules
+import sys
+sys.path.insert(0, '/home/fdahmani/tudatcompile/tudat-bundle/cmake-build-release/tudatpy')
+import numpy as np
+from matplotlib import pyplot as plt 
+import os
+import csv
+import datetime
+import matplotlib.dates as mdates
+import math
+import shutil
+
+# Load required tudatpy modules
+from tudatpy.kernel import constants
+from tudatpy.kernel.interface import spice
+from tudatpy.kernel import numerical_simulation
+from tudatpy.kernel.numerical_simulation import environment_setup
+from tudatpy.kernel.numerical_simulation import propagation_setup
+from tudatpy.kernel.numerical_simulation import estimation, estimation_setup
+from tudatpy.kernel.numerical_simulation.estimation_setup import observation
+from tudatpy.kernel.astro import element_conversion, time_conversion, frame_conversion
+from tudatpy.kernel.math import interpolators
+from tudatpy import util
+
+
+# Load spice kernels
+spice.load_standard_kernels()
+spice.load_kernel('jup344.bsp')
+
+# Define temporal scope of the simulation - equal to the time JUICE will spend in orbit around Jupiter
+simulation_start_epoch = time_conversion.DateTime(1949,7,15,12,0,0).epoch()
+simulation_end_epoch = time_conversion.DateTime(2023,1,1,12,0,0).epoch()
+simulation_first_end = time_conversion.DateTime(1900,1,1,12,0,0).epoch()
+simulation_duration = simulation_end_epoch - simulation_start_epoch
+
+
+### Create the Environment
+"""
+For the problem at hand, the environment consists of the Jovian system with its four largest moons - Io, Europa, Ganymede, and Callisto - as well as Saturn and the Sun which will be relevant when creating some perturbing accelerations afterwards. While slightly altering the standard settings of the moons, such that their rotation around their own main axis resembles a synchronous rotation, we will also apply a tabulated ephemeris based on every current (standard) ephemeris to the moons' settings. While, at first glance, this does not add any value to the simulation, this step is crucial in order to later be able to simulate the moons states purely based on their ephemerides without having to propagate their states.
+"""
+
+# Create default body settings for selected celestial bodies
+jovian_moons_to_create = ['Io', 'Europa', 'Ganymede', 'Callisto','Elara','Himalia']
+planets_to_create = ['Jupiter', 'Saturn']
+stars_to_create = ['Sun']
+bodies_to_create = np.concatenate((jovian_moons_to_create, planets_to_create, stars_to_create))
+
+# Create default body settings for bodies_to_create, with 'Jupiter'/'ELCIPJ2000'
+# as global frame origin and orientation.
+global_frame_origin = 'Jupiter'
+global_frame_orientation = 'ECLIPJ2000'
+body_settings = environment_setup.get_default_body_settings(
+    bodies_to_create, global_frame_origin, global_frame_orientation)
+
+
+# Define bodies that are propagated, and their central bodies of propagation
+bodies_to_propagate = ['Elara']
+central_bodies = ['Jupiter']
+
+### Ephemeris Settings Moons ###
+for moon in bodies_to_propagate:
+    # Apply tabulated ephemeris settings
+    body_settings.get(moon).ephemeris_settings = environment_setup.ephemeris.tabulated_from_existing(
+    body_settings.get(moon).ephemeris_settings,
+    simulation_start_epoch - 12*7200.0,
+    simulation_end_epoch + 12*7200.0,
+    time_step=60.0*180)
+#body_settings.get('Himalia').ephemeris_settings = environment_setup.ephemeris.tabulated_from_existing(environment_setup.ephemeris.direct_spice("Jupiter",global_frame_orientation,"Himalia"),simulation_start_epoch-12*7200,simulation_end_epoch+12*7200,60,interpolators.lagrange_interpolation(4))
+G = constants.GRAVITATIONAL_CONSTANT
+body_settings.get("Elara").gravity_field_settings = environment_setup.gravity_field.central(869227691196372000 *G) 
+body_settings.get("Himalia").gravity_field_settings = environment_setup.gravity_field.central(1.40709865e+08) 
+
+# Create system of selected bodies
+bodies = environment_setup.create_system_of_bodies(body_settings)
+
+
+### Create Propagator Settings
+acceleration_settings_moons = dict()
+
+for idx, moon in enumerate(bodies_to_propagate):
+    other_moons = np.delete(np.array(bodies_to_propagate), idx)
+    acceleration_settings_moon = {
+        'Jupiter': [propagation_setup.acceleration.spherical_harmonic_gravity(8, 0)],
+        'Io': [propagation_setup.acceleration.spherical_harmonic_gravity(2, 2)],
+        'Ganymede': [propagation_setup.acceleration.spherical_harmonic_gravity(2, 2)],
+        'Europa': [propagation_setup.acceleration.spherical_harmonic_gravity(2, 2)],
+        'Callisto': [propagation_setup.acceleration.spherical_harmonic_gravity(2, 2)],
+        'Himalia': [propagation_setup.acceleration.point_mass_gravity()],
+        'Sun': [propagation_setup.acceleration.point_mass_gravity()],
+        'Saturn': [propagation_setup.acceleration.point_mass_gravity()]
+        
+    }
+    acceleration_settings_moons[moon] = acceleration_settings_moon
+
+acceleration_settings = acceleration_settings_moons
+# Create acceleration models
+acceleration_models = propagation_setup.create_acceleration_models(
+    bodies, acceleration_settings, bodies_to_propagate, central_bodies)
+
+# Define initial state
+initial_states = list()
+for body in bodies_to_propagate:
+    initial_states.append(spice.get_body_cartesian_state_at_epoch(
+        target_body_name=body,
+        observer_body_name='Jupiter',
+        reference_frame_name=global_frame_orientation,
+        aberration_corrections='none',
+        ephemeris_time=simulation_start_epoch))
+initial_states = np.concatenate(initial_states)
+#initial_states = [-9.42113720e+09 , 3.89345534e+09,  1.52405360e+09 ,-3.93593890e+02, -3.34180645e+03,  1.57778360e+03] #1980
+### Integrator Settings ###
+# Use fixed step-size integrator (RKDP8) with fixed time-step of 180 minutes
+# Create integrator settings
+time_step_sec = 60.0*180
+integrator_settings = propagation_setup.integrator. \
+    runge_kutta_fixed_step_size(initial_time_step=time_step_sec,
+                                coefficient_set=propagation_setup.integrator.CoefficientSets.rkdp_87)
+
+### Termination Settings ###
+#termination_condition = propagation_setup.propagator.time_termination(simulation_end_epoch)
+termination_condition = propagation_setup.propagator.non_sequential_termination(
+    propagation_setup.propagator.time_termination(simulation_end_epoch), propagation_setup.propagator.time_termination(simulation_first_end))
+
+# Define Keplerian elements of the moons as dependent variables
+dependent_variables_to_save = [propagation_setup.dependent_variable.keplerian_state('Elara', 'Jupiter')]
+
+### Propagator Settings ###
+propagator_settings = propagation_setup.propagator. \
+    translational(central_bodies=central_bodies,
+                  acceleration_models=acceleration_models,
+                  bodies_to_integrate=bodies_to_propagate,
+                  initial_states=initial_states,
+                  initial_time=simulation_start_epoch,
+                  integrator_settings=integrator_settings,
+                  termination_settings=termination_condition,
+                  output_variables=dependent_variables_to_save)
+propagator_settings.processing_settings.results_save_frequency_in_steps = 1
+
+## Orbital Estimation
+### Create Link Ends for the Moons
+
+link_ends_elara = dict()
+link_ends_elara[estimation_setup.observation.observed_body] = estimation_setup.observation.\
+    body_origin_link_end_id('Elara')
+link_definition_elara = estimation_setup.observation.LinkDefinition(link_ends_elara)
+
+link_definition_dict = {
+    'Elara': link_definition_elara,
+}
+
+
+### Observation Model Settings
+position_observation_settings = [estimation_setup.observation.cartesian_position(link_definition_elara)]
+
+### Observation Simulation Settings
+# Define epochs at which the ephemerides shall be checked
+observation_times = np.arange(simulation_start_epoch + 12*7200.0, simulation_end_epoch - 12*7200.0, 3.0 * 3600)
+
+# Create the observation simulation settings per moon
+observation_simulation_settings = list()
+for moon in link_definition_dict.keys():
+    observation_simulation_settings.append(estimation_setup.observation.tabulated_simulation_settings(
+        estimation_setup.observation.position_observable_type,
+        link_definition_dict[moon],
+        observation_times,
+        reference_link_end_type=estimation_setup.observation.observed_body))
+
+
+### Simulate Ephemeris' States of Satellites
+# Create observation simulators
+ephemeris_observation_simulators = estimation_setup.create_observation_simulators(
+    position_observation_settings, bodies)
+# Get ephemeris states as ObservationCollection
+print('Checking ephemerides...')
+ephemeris_satellite_states = estimation.simulate_observations(
+    observation_simulation_settings,
+    ephemeris_observation_simulators,
+    bodies)
+
+### Define Estimable Parameters
+parameters_to_estimate_settings = estimation_setup.parameter.initial_states(propagator_settings, bodies)
+parameters_to_estimate_settings.append(estimation_setup.parameter.gravitational_parameter("Himalia"))
+parameters_to_estimate = estimation_setup.create_parameter_set(parameters_to_estimate_settings, bodies)
+original_parameter_vector = parameters_to_estimate.parameter_vector
+
+
+### Perform the Estimation
+print('Running propagation...')
+with util.redirect_std():
+    estimator = numerical_simulation.Estimator(bodies, parameters_to_estimate,
+                                               position_observation_settings, propagator_settings)
+
+
+convergence_checker = estimation.estimation_convergence_checker(maximum_iterations = 5)
+# Create input object for the estimation
+estimation_input = estimation.EstimationInput(ephemeris_satellite_states,convergence_checker=convergence_checker)
+# Set methodological options
+estimation_input.define_estimation_settings(save_state_history_per_iteration=True)
+# Perform the estimation
+print('Performing the estimation...')
+print(f'Original initial states: {original_parameter_vector}')
+
+
+with util.redirect_std(redirect_out=False):
+    estimation_output = estimator.perform_estimation(estimation_input)
+initial_states_updated = parameters_to_estimate.parameter_vector
+print('Done with the estimation...')
+print(f'Updated initial states: {initial_states_updated}')
+print('start')
+print(estimation_output.correlations)
+print(estimation_output.design_matrix)
+print('stop')
+
+#Load data
+simulator_object = estimation_output.simulation_results_per_iteration[-1]
+state_history = simulator_object.dynamics_results.state_history
+dependent_variable_history = simulator_object.dynamics_results.dependent_variable_history
+
+
+##Correlations
+correlations = estimation_output.correlations
+design_matrix = estimation_output.normalized_design_matrix
+# print(correlations)
+# print(design_matrix)
+
+# plt.imshow(np.abs(correlations), aspect='auto', interpolation='none')
+# plt.colorbar()
+
+# plt.title("Correlation Matrix")
+# plt.xlabel("Index - Estimated Parameter")
+# plt.ylabel("Index - Estimated Parameter")
+
+# plt.tight_layout()
+# plt.show()
+
+# #Design matrix
+# plt.imshow(np.abs(design_matrix), aspect='auto', interpolation='none')
+# plt.colorbar()
+
+# plt.title("Design Matrix")
+# plt.xlabel("Index - Estimated Parameter")
+# plt.ylabel("Index - Estimated Parameter")
+
+
+# plt.tight_layout()
+# plt.show()
+
+### Ephemeris Kepler elements ####
+# Initialize containers
+ephemeris_state_history = dict()
+ephemeris_keplerian_states = dict()
+jupiter_gravitational_parameter = bodies.get('Jupiter').gravitational_parameter
+k = 0
+#Loop over the propagated states and use the SPICE ephemeris as benchmark solution
+for epoch in state_history.keys():
+    ephemeris_state = list()
+    keplerian_state = list()
+    for moon in bodies_to_propagate:
+        ephemeris_state_temp = spice.get_body_cartesian_state_at_epoch(
+            target_body_name=moon,
+            observer_body_name='Jupiter',
+            reference_frame_name='ECLIPJ2000',
+            aberration_corrections='none',
+            ephemeris_time=epoch)
+        ephemeris_state.append(ephemeris_state_temp)
+        keplerian_state.append(element_conversion.cartesian_to_keplerian(ephemeris_state_temp,
+                                                                            jupiter_gravitational_parameter))
+
+    ephemeris_state_history[epoch] = np.concatenate(np.array(ephemeris_state))
+    ephemeris_keplerian_states[epoch] = np.concatenate(np.array(keplerian_state))
+    k+=1
+state_history_difference = np.vstack(list(state_history.values())) - np.vstack(list(ephemeris_state_history.values()))
+position_difference = {'Elara': state_history_difference[:, 0:3]}
+velocity_difference = {'Elara': state_history_difference[:, 3:6]}
+propagation_kepler_elements = np.vstack(list(dependent_variable_history.values()))
+kepler_difference = np.vstack(list(dependent_variable_history.values())) - np.vstack(list(ephemeris_keplerian_states.values()))
+
+
+# get current directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Save the current time as a string
+current_time = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+# Create a new folder with the current timestamp as the name
+folder_name = os.path.join(script_dir, 'results_prefit', f"plots_{current_time}")
+os.makedirs(folder_name, exist_ok=True)
+
+
+time2plt = list()
+epochs_julian_seconds = np.vstack(list(state_history.keys()))
+for epoch in epochs_julian_seconds:
+    epoch_days = constants.JULIAN_DAY_ON_J2000 + epoch / constants.JULIAN_DAY
+    print(epoch_days)
+    time2plt.append(time_conversion.julian_day_to_calendar_date(epoch_days))
+
+# #RSW
+# fig, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+
+# ax1.plot(time2plt[1:], np.vstack(rsw_states)[:,0] * 1E-3,
+#          label=r'Amalthea0 ($i=1$)', c='#A50034')
+# ax1.plot(time2plt[1:], np.vstack(rsw_states)[:,1] * 1E-3,
+#          label=r'Amalthea1 ($i=1$)', c='#0076C2')
+# ax1.plot(time2plt[1:], np.vstack(rsw_states)[:,2] * 1E-3,
+#          label=r'Amalthea2 ($i=1$)', c='#EC6842')
+# ax1.set_title(r'Difference in Position')
+# #ax1.plot(time2plt[1:], np.linalg.norm( np.vstack(rsw_states), axis=1) * 1E-3,
+# #         label=r'Amalthea ($i=1$)', c='#A50034')
+# ax1.xaxis.set_major_locator(mdates.MonthLocator(bymonth=1))
+# ax1.xaxis.set_minor_locator(mdates.MonthLocator())
+# ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b-%Y'))
+# ax1.set_ylabel(r'Difference [km]')
+# ax1.legend()
+# plt.show()
+
+# #cartesian
+# fig, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+
+# ax1.scatter(np.vstack(list(state_history.values()))[:200,0]* 1E-3, np.vstack(list(state_history.values()))[:200,1]* 1E-3,
+#          label=r'Propagated ($i=1$)', c='#A50034')
+# ax1.scatter(np.vstack(list(ephemeris_state_history.values()))[:1000,0]* 1E-3, (np.vstack(list(ephemeris_state_history.values()))[:1000,1])* 1E-3,
+#          label=r'Spice ($i=1$)', c='#0076C2')
+# # ax1.plot(time2plt, position_difference['Amalthea'][:,2] * 1E-3,
+# #          label=r'Amalthea2 ($i=1$)', c='#EC6842')
+# ax1.set_title(r'Difference in Position')
+# # ax1.plot(time2plt, np.linalg.norm(position_difference['Amalthea'], axis=1) * 1E-3,
+# #          label=r'Amalthea ($i=1$)', c='#A50034')
+# ax1.xaxis.set_major_locator(mdates.MonthLocator(bymonth=1))
+# ax1.xaxis.set_minor_locator(mdates.MonthLocator())
+# ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b-%Y'))
+# ax1.set_ylabel(r'Difference [km]')
+# ax1.legend()
+# plt.show()
+
+
+#original
+fig, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+
+# ax1.plot(time2plt, position_difference['Amalthea'][:,0] * 1E-3,
+#          label=r'Amalthea0 ($i=1$)', c='#A50034')
+# ax1.plot(time2plt, position_difference['Amalthea'][:,1] * 1E-3,
+#          label=r'Amalthea1 ($i=1$)', c='#0076C2')
+# ax1.plot(time2plt, position_difference['Amalthea'][:,2] * 1E-3,
+#          label=r'Amalthea2 ($i=1$)', c='#EC6842')
+ax1.set_title(r'Difference in Position')
+ax1.plot(time2plt, np.linalg.norm(position_difference['Elara'], axis=1) * 1E-3,
+         label=r'Elara ($i=1$)', c='#A50034')
+ax1.xaxis.set_major_locator(mdates.MonthLocator(bymonth=1))
+ax1.xaxis.set_minor_locator(mdates.MonthLocator())
+ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b-%Y'))
+ax1.set_ylabel(r'Difference [km]')
+ax1.legend()
+plt.savefig(os.path.join(folder_name, "plot1.png"))
+plt.show()
+
+n = len(np.linalg.norm(position_difference['Elara'], axis=1))
+fft_result = np.fft.fft(np.linalg.norm(position_difference['Elara'], axis=1))
+time_step = simulation_duration/(n-1)
+frequencies = np.fft.fftfreq(n, d=time_step)
+plt.plot(frequencies, np.abs(fft_result))
+plt.title("FFT Result")
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Magnitude")
+plt.xlim(0, max(frequencies))
+plt.tight_layout()
+
+plt.show()
+
+#velocity
+fig, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+
+# ax1.plot(time2plt, position_difference['Amalthea'][:,0] * 1E-3,
+#          label=r'Amalthea0 ($i=1$)', c='#A50034')
+# ax1.plot(time2plt, position_difference['Amalthea'][:,1] * 1E-3,
+#          label=r'Amalthea1 ($i=1$)', c='#0076C2')
+# ax1.plot(time2plt, position_difference['Amalthea'][:,2] * 1E-3,
+#          label=r'Amalthea2 ($i=1$)', c='#EC6842')
+ax1.set_title(r'Difference in Position')
+ax1.plot(time2plt, np.linalg.norm(velocity_difference['Elara'], axis=1),
+         label=r'Elara ($i=1$)', c='#A50034')
+ax1.xaxis.set_major_locator(mdates.MonthLocator(bymonth=1))
+ax1.xaxis.set_minor_locator(mdates.MonthLocator())
+ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b-%Y'))
+ax1.set_ylabel(r'Difference [m/s]')
+ax1.legend()
+plt.savefig(os.path.join(folder_name, "plot2.png"))
+plt.show()
+
+
+#Kepler
+
+fig, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+
+# ax1.plot(time2plt, position_difference['Amalthea'][:,0] * 1E-3,
+#          label=r'Amalthea0 ($i=1$)', c='#A50034')
+# ax1.plot(time2plt, position_difference['Amalthea'][:,1] * 1E-3,
+#          label=r'Amalthea1 ($i=1$)', c='#0076C2')
+# ax1.plot(time2plt, position_difference['Amalthea'][:,2] * 1E-3,
+#          label=r'Amalthea2 ($i=1$)', c='#EC6842')
+ax1.set_title(r'Difference in Position')
+ax1.plot(time2plt, propagation_kepler_elements[:,0]* 1E-3,
+         label=r'Elara ($i=1$)', c='#A50034')
+ax1.xaxis.set_major_locator(mdates.MonthLocator(bymonth=1))
+ax1.xaxis.set_minor_locator(mdates.MonthLocator())
+ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b-%Y'))
+ax1.set_ylabel(r'Semi-major axis [km]')
+ax1.legend()
+plt.savefig(os.path.join(folder_name, "plot3.png"))
+plt.show()
+
+#Kepler
+
+fig, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+
+# ax1.plot(time2plt, position_difference['Amalthea'][:,0] * 1E-3,
+#          label=r'Amalthea0 ($i=1$)', c='#A50034')
+# ax1.plot(time2plt, position_difference['Amalthea'][:,1] * 1E-3,
+#          label=r'Amalthea1 ($i=1$)', c='#0076C2')
+# ax1.plot(time2plt, position_difference['Amalthea'][:,2] * 1E-3,
+#          label=r'Amalthea2 ($i=1$)', c='#EC6842')
+ax1.set_title(r'Difference in Position')
+ax1.plot(time2plt, kepler_difference[:,0]* 1E-3,
+         label=r'Elara ($i=1$)', c='#A50034')
+ax1.xaxis.set_major_locator(mdates.MonthLocator(bymonth=1))
+ax1.xaxis.set_minor_locator(mdates.MonthLocator())
+ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b-%Y'))
+ax1.set_ylabel(r'Semi-major axis [km]')
+ax1.legend()
+plt.savefig(os.path.join(folder_name, "plot4.png"))
+plt.show()
+
+
+
+obstime2plt = list()
+obs_julian_seconds = np.vstack(observation_times)
+for obs in obs_julian_seconds:
+    obs_days = constants.JULIAN_DAY_ON_J2000 + obs / constants.JULIAN_DAY
+    obstime2plt.append(time_conversion.julian_day_to_calendar_date(obs_days))
+
+residuals = estimation_output.final_residuals
+residual_x = residuals[0::3]
+residual_y = residuals[1::3]
+residual_z = residuals[2::3]
+plt.plot(observation_times,residual_x, label='x')
+plt.plot(observation_times,residual_y, label='y')
+plt.plot(observation_times,residual_z, label='z')
+plt.legend()
+plt.grid()
+plt.savefig(os.path.join(folder_name, "plot5.png"))
+plt.show()
+
+rms_list = []
+for i in range(len(residual_x)):
+        # Calculate the squares of the i-th elements from each list
+    squared_x = residual_x[i]**2
+    squared_y = residual_y[i]**2
+    squared_z = residual_z[i]**2
+
+    # Calculate the mean of the squared values
+    mean_squared = (squared_x + squared_y + squared_z) / 3
+
+    # Calculate the RMS value by taking the square root of the mean squared value
+    rms = math.sqrt(mean_squared)
+
+    # Append the RMS value to the list
+    rms_list.append(rms*1E-3)
+# plt.plot(observation_times,rms_list, label='rms')
+# plt.legend()
+# plt.grid()
+# plt.xlabel('time [s since J2000]')
+# plt.ylabel('rms of the position')
+# plt.savefig(os.path.join(folder_name, "plot6.png"))
+# plt.show()
+
+
+fig, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+
+ax1.set_title(r'RMS of position residual')
+ax1.plot(obstime2plt, rms_list,
+         label=r'Elara ($i=1$)', c='#A50034')
+ax1.xaxis.set_major_locator(mdates.MonthLocator(bymonth=1))
+ax1.xaxis.set_minor_locator(mdates.MonthLocator())
+ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b-%Y'))
+ax1.set_ylabel(r'RMS of position residual [km]')
+ax1.legend()
+plt.savefig(os.path.join(folder_name, "plot6.png"))
+plt.show()
+
+script_name = os.path.basename(__file__)
+shutil.copy(script_name, os.path.join(folder_name, script_name))
+
+print('Done')
